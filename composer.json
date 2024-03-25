@@ -1,0 +1,10 @@
+{
+  "autoload": {
+    "psr-4": {
+      "CronExpression\\": "src"
+    }
+  },
+  "require": {
+    "php": "^8.3"
+  }
+}
