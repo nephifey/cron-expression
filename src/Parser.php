@@ -234,22 +234,24 @@ final class Parser {
                 }
 
                 return $parsedAttribute;
+			case str_contains($value, "/"):
+				[$range, $step] = $this->assertValidStep($attributePosition, $value);
+				$min = current($range);
+				$max = end($range);
+				$values = [$min];
+
+				while (true) {
+					$nextValue = end($values) + $step;
+
+					if ($nextValue > $max)
+						break;
+
+					$values[] = $nextValue;
+				}
+
+				return $values;
             case str_contains($value, "-"):
                 return range(...$this->assertValidRange($attributePosition, $value));
-            case str_contains($value, "/"):
-                $step = (int) $this->assertValidStep($attributePosition, $value);
-                $values = [$step];
-
-                while (true) {
-                    $nextValue = $values[count($values) - 1] + $step;
-
-                    if ($nextValue > self::BOUNDARIES[$attributePosition][1])
-                        break;
-
-                    $values[] = $nextValue;
-                }
-
-                return $values;
             case is_numeric($value):
                 $this->assertValidNumeric($attributePosition, $value);
                 return [$value];
@@ -295,10 +297,13 @@ final class Parser {
      * Attribute is valid step format.
      * @param int $attributePosition The attribute position.
      * @param string $value The value of the attribute.
-     * @return string The extracted step value.
+     * @return array{
+	 *     range: array,
+	 *     step: string,
+	 * } The extracted step value.
      * @throws Exception
      */
-    private function assertValidStep(int $attributePosition, string $value): string {
+    private function assertValidStep(int $attributePosition, string $value): array {
         $parts = explode("/", $value);
 
         if (count(self::BOUNDARIES[$attributePosition]) !== count($parts)) {
@@ -309,15 +314,15 @@ final class Parser {
         }
 
         if ($parts[0] !== "*") {
-            throw new Exception(sprintf(
-                "The attribute \"%s\" does not contain \"*\" at the first position of the step.",
-                $value
-            ));
+			$range = $this->parseAttribute($attributePosition, $parts[0]);
         }
 
         $this->assertValidNumeric($attributePosition, $parts[1]);
 
-        return $parts[1];
+        return [
+			$range ?? range(...self::BOUNDARIES[$attributePosition]),
+			$parts[1],
+		];
     }
 
     /**
