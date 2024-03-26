@@ -300,22 +300,20 @@ final class Parser {
      * @return array{
 	 *     range: array,
 	 *     step: string,
-	 * } The extracted step value.
+	 * } The extracted step information.
      * @throws Exception
      */
     private function assertValidStep(int $attributePosition, string $value): array {
         $parts = explode("/", $value);
 
-        if (count(self::BOUNDARIES[$attributePosition]) !== count($parts)) {
-            throw new Exception(sprintf(
-                "The attribute \"%s\" contains a step with more than %d parts.",
-                $value, count(self::BOUNDARIES[$attributePosition])
-            ));
-        }
+        if (count(self::BOUNDARIES[$attributePosition]) !== count($parts))
+			throw new Exception(sprintf(
+				"The attribute \"%s\" contains a step with more than %d parts.",
+				$value, count(self::BOUNDARIES[$attributePosition])
+			));
 
-        if ($parts[0] !== "*") {
+        if ($parts[0] !== "*")
 			$range = $this->parseAttribute($attributePosition, $parts[0]);
-        }
 
         $this->assertValidNumeric($attributePosition, $parts[1]);
 
