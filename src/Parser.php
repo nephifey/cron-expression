@@ -101,9 +101,14 @@ final class Parser {
     ];
 
     /**
-     * @var array Current parsed attribute values.
+     * @var array Current raw attributes.
      */
-    private array $parsedAttributeValues;
+    private array $rawAttributes;
+
+    /**
+     * @var array Current parsed attributes.
+     */
+    private array $parsedAttributes;
 
     /**
      * Attempts to parse the cron expression.
@@ -126,7 +131,8 @@ final class Parser {
 
         foreach ($attributes as $attributePosition => $value) {
             foreach ($this->parseAttribute($attributePosition, $value) as $parsedValue) {
-                $this->parsedAttributeValues[$attributePosition][$parsedValue] = true;
+                $this->rawAttributes[$attributePosition] = $value;
+                $this->parsedAttributes[$attributePosition][$parsedValue] = true;
             }
         }
 
@@ -134,7 +140,7 @@ final class Parser {
         $date->setTime((int) $date->format(self::FORMATTERS[self::ATTRIBUTES["hour"]]), (int) $date->format(self::FORMATTERS[self::ATTRIBUTES["minute"]]));
         [$nextRunDate, $prevRunDate] = $this->getRunDates($date);
 
-        unset($this->parsedAttributeValues);
+        unset($this->rawAttributes, $this->parsedAttributes);
 
         return new Expression($expression, $this, $nextRunDate, $prevRunDate);
     }
@@ -188,6 +194,9 @@ final class Parser {
         $datetimeAddOrSub = ($increment ? "add" : "sub");
         $interval = new DateInterval("PT1M");
 
+        $dayMonthIsDefault = ("*" === $this->rawAttributes[self::ATTRIBUTES["day_month"]]);
+        $dayWeekIsDefault = ("*" === $this->rawAttributes[self::ATTRIBUTES["day_week"]]);
+
         while (true) {
             $month = (int) $date->format(self::FORMATTERS[self::ATTRIBUTES["month"]]);
             $dayMonth = (int) $date->format(self::FORMATTERS[self::ATTRIBUTES["day_month"]]);
@@ -196,11 +205,17 @@ final class Parser {
             $minute = (int) $date->format(self::FORMATTERS[self::ATTRIBUTES["minute"]]);
 
             if (isset(
-                $this->parsedAttributeValues[self::ATTRIBUTES["month"]][$month],
-                $this->parsedAttributeValues[self::ATTRIBUTES["day_month"]][$dayMonth],
-                $this->parsedAttributeValues[self::ATTRIBUTES["day_week"]][$dayWeek],
-                $this->parsedAttributeValues[self::ATTRIBUTES["hour"]][$hour],
-                $this->parsedAttributeValues[self::ATTRIBUTES["minute"]][$minute]
+                $this->parsedAttributes[self::ATTRIBUTES["month"]][$month],
+                $this->parsedAttributes[self::ATTRIBUTES["hour"]][$hour],
+                $this->parsedAttributes[self::ATTRIBUTES["minute"]][$minute],
+            ) && (
+                (!$dayWeekIsDefault && !$dayMonthIsDefault && (
+                    isset($this->parsedAttributes[self::ATTRIBUTES["day_month"]][$dayMonth])
+                    || isset($this->parsedAttributes[self::ATTRIBUTES["day_week"]][$dayWeek])
+                )) || (isset(
+                    $this->parsedAttributes[self::ATTRIBUTES["day_month"]][$dayMonth],
+                    $this->parsedAttributes[self::ATTRIBUTES["day_week"]][$dayWeek],
+                ))
             )) break;
 
             $date->$datetimeAddOrSub($interval);
@@ -251,8 +266,7 @@ final class Parser {
 
                 return $values;
             case is_numeric($value):
-                $this->assertValidNumeric($attributePosition, $value);
-                return [$value];
+                return [$this->assertValidNumeric($attributePosition, $value)];
             case "*" === $value:
                 return range(...self::BOUNDARIES[$attributePosition]);
         }
@@ -264,7 +278,7 @@ final class Parser {
     }
 
     /**
-     * Attribute is valid range format and within range.
+     * Attribute valid range and within range validity check.
      * @param int $attributePosition The attribute position.
      * @param string $value The value of the attribute.
      * @return array The valid range in array format.
@@ -279,20 +293,20 @@ final class Parser {
                 $value, count(self::BOUNDARIES[$attributePosition])
             ));
 
+        $parts[0] = $this->assertValidNumeric($attributePosition, $parts[0]);
+        $parts[1] = $this->assertValidNumeric($attributePosition, $parts[1]);
+
         if ($parts[0] > $parts[1])
             throw new Exception(sprintf(
                 "The attribute \"%s\" cannot have a lower bound that is greater than the higher bound.",
                 $value
             ));
 
-        $this->assertValidNumeric($attributePosition, $parts[0]);
-        $this->assertValidNumeric($attributePosition, $parts[1]);
-
         return $parts;
     }
 
     /**
-     * Attribute is valid step format.
+     * Attribute is valid step format and within range validity check.
      * @param int $attributePosition The attribute position.
      * @param string $value The value of the attribute.
      * @return string The extracted step value.
@@ -315,23 +329,25 @@ final class Parser {
             ));
         }
 
-        $this->assertValidNumeric($attributePosition, $parts[1]);
-
-        return $parts[1];
+        return $this->assertValidNumeric($attributePosition, $parts[1]);
     }
 
     /**
      * Attribute within range validity check.
      * @param int $attributePosition The attribute position.
      * @param string $value The value of the attribute.
-     * @return void
+     * @return string The valid number.
      * @throws Exception
      */
-    private function assertValidNumeric(int $attributePosition, string $value): void {
+    private function assertValidNumeric(int $attributePosition, string $value): string {
         [$min, $max] = self::BOUNDARIES[$attributePosition];
+        $nonstandardValue = strtoupper($value);
+
+        if (isset(self::NONSTANDARD_VALUES[$attributePosition][$nonstandardValue]))
+            $value = (string) self::NONSTANDARD_VALUES[$attributePosition][$nonstandardValue];
 
         if ($min <= $value && $max >= $value)
-            return;
+            return $value;
 
         throw new Exception(sprintf(
             "The attribute \"%s\" is not within the valid boundaries of %d-%d.",
