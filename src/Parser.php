@@ -221,6 +221,7 @@ final class Parser {
             $date->$datetimeAddOrSub($interval);
         }
 
+
         return DateTimeImmutable::createFromMutable($date);
     }
 
@@ -326,8 +327,13 @@ final class Parser {
 				$value, count(self::BOUNDARIES[$attributePosition])
 			));
 
-        if ($parts[0] !== "*")
+        if ($parts[0] !== "*") {
+			if (is_numeric($parts[0])) {
+				$parts[0] = "{$parts[0]}-" . self::BOUNDARIES[$attributePosition][1];
+			}
+
 			$range = $this->parseAttribute($attributePosition, $parts[0]);
+		}
 
         return [
             $range ?? range(...self::BOUNDARIES[$attributePosition]),
