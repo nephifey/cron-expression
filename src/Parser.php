@@ -191,36 +191,61 @@ final class Parser {
      * @throws Exception
      */
     private function getRunDate(DateTime $date, bool $increment): DateTimeImmutable {
-        $datetimeAddOrSub = ($increment ? "add" : "sub");
-        $interval = new DateInterval("PT1M");
-
         $dayMonthIsDefault = ("*" === $this->rawAttributes[self::ATTRIBUTES["day_month"]]);
         $dayWeekIsDefault = ("*" === $this->rawAttributes[self::ATTRIBUTES["day_week"]]);
+        $format = implode(" ", self::FORMATTERS);
 
         while (true) {
-            $month = (int) $date->format(self::FORMATTERS[self::ATTRIBUTES["month"]]);
-            $dayMonth = (int) $date->format(self::FORMATTERS[self::ATTRIBUTES["day_month"]]);
-            $dayWeek = (int) $date->format(self::FORMATTERS[self::ATTRIBUTES["day_week"]]);
-            $hour = (int) $date->format(self::FORMATTERS[self::ATTRIBUTES["hour"]]);
-            $minute = (int) $date->format(self::FORMATTERS[self::ATTRIBUTES["minute"]]);
+            [$minute, $hour, $dayMonth, $month, $dayWeek] = sscanf($date->format($format), "%d %d %d %d %d");
 
-            if (isset(
-                $this->parsedAttributes[self::ATTRIBUTES["month"]][$month],
-                $this->parsedAttributes[self::ATTRIBUTES["hour"]][$hour],
-                $this->parsedAttributes[self::ATTRIBUTES["minute"]][$minute],
-            ) && (
-                (!$dayWeekIsDefault && !$dayMonthIsDefault && (
-                    isset($this->parsedAttributes[self::ATTRIBUTES["day_month"]][$dayMonth])
-                    || isset($this->parsedAttributes[self::ATTRIBUTES["day_week"]][$dayWeek])
-                )) || (isset(
+            switch (false) {
+                case isset($this->parsedAttributes[self::ATTRIBUTES["month"]][$month]):
+                    if ($increment) {
+                        $date->modify("first day of next month");
+                        $date->setTime(0, 0);
+                    } else {
+                        $date->modify("last day of previous month");
+                        $date->setTime(23, 59);
+                    }
+
+                    continue 2;
+                case (!$dayWeekIsDefault && !$dayMonthIsDefault && (
+                        isset($this->parsedAttributes[self::ATTRIBUTES["day_month"]][$dayMonth])
+                        || isset($this->parsedAttributes[self::ATTRIBUTES["day_week"]][$dayWeek])
+                    )) || (isset(
                     $this->parsedAttributes[self::ATTRIBUTES["day_month"]][$dayMonth],
                     $this->parsedAttributes[self::ATTRIBUTES["day_week"]][$dayWeek],
-                ))
-            )) break;
+                )):
+                    if ($increment) {
+                        $date->modify("+1 day");
+                        $date->setTime(0, 0);
+                    } else {
+                        $date->modify("-1 day");
+                        $date->setTime(23, 59);
+                    }
 
-            $date->$datetimeAddOrSub($interval);
+                    continue 2;
+                case isset($this->parsedAttributes[self::ATTRIBUTES["hour"]][$hour]):
+                    if ($increment) {
+                        $date->modify("+1 hour");
+                        $date->setTime((int) $date->format(self::FORMATTERS[self::ATTRIBUTES["hour"]]), 0);
+                    } else {
+                        $date->modify("-1 hour");
+                        $date->setTime((int) $date->format(self::FORMATTERS[self::ATTRIBUTES["hour"]]), 59);
+                    }
+
+                    continue 2;
+                case isset($this->parsedAttributes[self::ATTRIBUTES["minute"]][$minute]):
+                    if ($increment)
+                        $date->add(new DateInterval("PT1M"));
+                    else
+                        $date->sub(new DateInterval("PT1M"));
+
+                    continue 2;
+            }
+
+            break;
         }
-
 
         return DateTimeImmutable::createFromMutable($date);
     }
