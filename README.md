@@ -7,7 +7,7 @@ Cron expression parser to get the previous run date, next run date, and determin
 Install the package into your project using composer via the command below.
 
 ```
-composer install nephifey/cron-expression
+composer require nephifey/cron-expression
 ```
 
 ## Usage
