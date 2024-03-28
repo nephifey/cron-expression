@@ -1,6 +1,6 @@
 {
   "name": "nephifey/cron-expression",
-  "description": "Cron expression parser to get the previous and next run dates.",
+  "description": "Cron expression parser to get the previous run date, next run date, and determine if the expression is due to run based on the next run date.",
   "license": "GPL-3.0-or-later",
   "require": {
     "php": "^8.3"
