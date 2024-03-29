@@ -26,7 +26,7 @@ final class Parser {
     /**
      * The attributes and their expected positions.
      */
-    private const array ATTRIBUTES = [
+    private const ATTRIBUTES = [
         "minute"    => 0,
         "hour"      => 1,
         "day_month" => 2,
@@ -38,7 +38,7 @@ final class Parser {
      * The PHP datetime format characters for supported attributes.
      * {@link https://www.php.net/manual/en/datetime.format.php}
      */
-    private const array FORMATTERS = [
+    private const FORMATTERS = [
         self::ATTRIBUTES["minute"]    => "i",
         self::ATTRIBUTES["hour"]      => "G",
         self::ATTRIBUTES["day_month"] => "j",
@@ -49,7 +49,7 @@ final class Parser {
     /**
      * The numeric boundaries for supported attributes.
      */
-    private const array BOUNDARIES = [
+    private const BOUNDARIES = [
         self::ATTRIBUTES["minute"]    => [0, 59],
         self::ATTRIBUTES["hour"]      => [0, 23],
         self::ATTRIBUTES["day_month"] => [1, 31],
@@ -60,7 +60,7 @@ final class Parser {
     /**
      * The non-standard literals for supported attributes.
      */
-    private const array NONSTANDARD_VALUES = [
+    private const NONSTANDARD_VALUES = [
         self::ATTRIBUTES["month"]   => [
             "JAN" => 1,
             "FEB" => 2,
@@ -90,7 +90,7 @@ final class Parser {
     /**
      * The non-standard supported macros.
      */
-    private const array NONSTANDARD_MACROS = [
+    private const NONSTANDARD_MACROS = [
         "@yearly"   => "0 0 1 1 *",
         "@annually" => "0 0 1 1 *",
         "@monthly"  => "0 0 1 * *",
@@ -265,7 +265,7 @@ final class Parser {
             return $this->parseAttribute($attributePosition, (string) self::NONSTANDARD_VALUES[$attributePosition][$nonstandardValue]);
 
         switch (true) {
-            case str_contains($value, ","):
+            case false !== strpos($value, ","):
                 $parsedAttribute = [];
 
                 foreach (explode(",", $value) as $listValue) {
@@ -275,7 +275,7 @@ final class Parser {
                 }
 
                 return $parsedAttribute;
-			case str_contains($value, "/"):
+			case false !== strpos($value, "/"):
 				[$range, $step] = $this->assertValidStep($attributePosition, $value);
 				$min = current($range);
 				$max = end($range);
@@ -291,7 +291,7 @@ final class Parser {
 				}
 
 				return $values;
-            case str_contains($value, "-"):
+            case false !== strpos($value, "-"):
                 return range(...$this->assertValidRange($attributePosition, $value));
             case is_numeric($value):
                 return [$this->assertValidNumeric($attributePosition, $value)];

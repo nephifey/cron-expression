@@ -7,7 +7,6 @@ use CronExpression\Parser;
 use DateTime;
 use DateTimeZone;
 use Exception;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class ParserTest extends TestCase {
@@ -18,7 +17,9 @@ final class ParserTest extends TestCase {
 		self::$parser = new Parser();
 	}
 
-	#[DataProvider("expressionValidityProvider")]
+	/**
+	 * @dataProvider expressionValidityProvider
+	 */
 	public function testExpressionValidity(string $expression, bool $isValid = true) {
 		if (!$isValid)
 			$this->expectException(Exception::class);
@@ -26,7 +27,9 @@ final class ParserTest extends TestCase {
 		$this->assertInstanceOf(Expression::class, self::$parser->parse($expression));
 	}
 
-	#[DataProvider("nextDateProvider")]
+	/**
+	 * @dataProvider nextDateProvider
+	 */
 	public function testNextDate(string $expression, string $date, string $nextDate, bool $isDue = true) {
 		$date = new DateTime($date, new DateTimeZone(date_default_timezone_get()));
 		$nextDate = new DateTime($nextDate, new DateTimeZone(date_default_timezone_get()));
