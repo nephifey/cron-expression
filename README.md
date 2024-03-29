@@ -181,4 +181,3 @@ $newExpression = $expression->reparseImmutable(new DateTime("now +2 minute", new
 echo "{$expression->getNextRunDate()->format("Y-m-d H:i:s")}\r\n"; // one minute ahead
 echo "{$newExpression->getNextRunDate()->format("Y-m-d H:i:s")}\r\n"; // two minutes ahead
 ```
-
