@@ -98,7 +98,10 @@ final class Expression {
         $date->setTime($date->format("G"), $date->format("i"));
 
         if ($strict) {
-            return $this->nextRunDate->format("Y-m-d H:i:s") === $date->format("Y-m-d H:i:s");
+            return (
+				$this->nextRunDate->format("Y-m-d H:i:s") === $date->format("Y-m-d H:i:s")
+				&& $this->nextRunDate->getTimezone()->getName() === $date->getTimezone()->getName()
+			);
         }
 
         return $this->nextRunDate == $date;

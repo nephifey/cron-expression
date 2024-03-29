@@ -1,7 +1,16 @@
 {
   "name": "nephifey/cron-expression",
+  "type": "library",
   "description": "Cron expression parser to get the previous run date, next run date, and determine if the expression is due to run based on the next run date.",
+  "keywords": ["cron", "expression", "scheduler"],
+  "homepage": "https://github.com/nephifey/cron-expression",
   "license": "GPL-3.0-or-later",
+  "authors": [{
+    "name": "Nathan Phifer",
+    "email": "nathan@visionary.com",
+    "homepage": "https://visionary.com",
+    "role": "Developer"
+  }],
   "require": {
     "php": "^8.3"
   },
